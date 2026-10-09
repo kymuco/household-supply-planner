@@ -18,6 +18,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -306,8 +307,10 @@ def onboarding_wizard(browser) -> None:
             x["item_id"]: x["quantity"]
             for x in api(base, "/household/state")["household"]["balances"]
         }
-        assert balances["milk"] == {"amount": "1", "unit": "l"}, balances
-        assert balances["rice"] == {"amount": "0", "unit": "kg"}, balances
+        assert balances["milk"]["unit"] == "ml", balances
+        assert Decimal(balances["milk"]["amount"]) == Decimal("1000"), balances
+        assert balances["rice"]["unit"] == "g", balances
+        assert Decimal(balances["rice"]["amount"]) == Decimal("0"), balances
         assert "Рис" in browser.find_element(By.ID, "onboarding-content").text
 
         actions = browser.find_elements(By.CSS_SELECTOR, "#onboarding-actions button")
