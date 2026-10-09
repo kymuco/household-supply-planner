@@ -398,11 +398,8 @@ def test_mass_market_russian_ux_contract_has_no_primary_unit_selector() -> None:
     assert "Отметить запасы" in text
     assert 'id="stocktake-unit"' not in text
     assert 'id="stocktake-amount"' not in text
-    assert '<select id="plan-currency"' in text
-    assert 'value="KGS"' in text
-    assert 'value="KZT"' in text
-    assert 'value="USD"' in text
-    assert 'value="EUR"' in text
+    assert 'id="plan-currency" type="hidden" value="KGS"' in text
+    assert '<select id="plan-currency"' not in text
 
     js_start, js_body = asyncio.run(asgi_request(app, method="GET", path="/assets/app.js"))
     assert js_start["status"] == 200

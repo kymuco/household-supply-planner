@@ -2,8 +2,6 @@ from decimal import Decimal
 
 import pytest
 
-from decimal import Decimal
-from household_supply.pricing.currency import convert_currency
 from household_supply.domain.money import Money
 from household_supply.pricing.estimate import PriceEstimate
 from household_supply.pricing.currency import (
@@ -12,41 +10,6 @@ from household_supply.pricing.currency import (
 )
 
 
-
-def test_convert_currency_from_kgs() -> None:
-    result = convert_currency(
-        Money("1000", "KGS"),
-        "USD",
-    )
-
-    assert result.currency == "USD"
-    assert result.amount == Decimal("11.5000")
-
-
-def test_convert_currency_to_kgs() -> None:
-    result = convert_currency(
-        Money("10", "USD"),
-        "KGS",
-    )
-
-    assert result.currency == "KGS"
-    assert result.amount == Decimal("869.5652173913043478260869565")
-
-
-def test_same_currency_is_unchanged() -> None:
-    money = Money("1000", "KGS")
-
-    result = convert_currency(money, "KGS")
-
-    assert result == money
-
-
-def test_unsupported_currency_is_rejected() -> None:
-    with pytest.raises(ValueError):
-        convert_currency(
-            Money("1000", "KGS"),
-            "JPY",
-        )
 
 def test_convert_money() -> None:
     result = convert_money(

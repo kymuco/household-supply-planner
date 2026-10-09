@@ -188,21 +188,10 @@ p { color: var(--muted); line-height: 1.52; }
   font-size: 1.02rem;
   font-weight: 780;
 }
-..large-field { display: grid; }
-.input-with-suffix {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 140px;
-  gap: 8px;
-}
-.input-with-suffix input {
-  font-size: 1.18rem;
-  font-weight: 780;
-}
-.input-with-suffix select {
-  font-size: .95rem;
-  font-weight: 760;
-  cursor: pointer;
-}
+.large-field { display: grid; }
+.input-with-suffix { position: relative; display: block; }
+.input-with-suffix input { padding-right: 66px; font-size: 1.18rem; font-weight: 780; }
+.input-with-suffix strong { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--muted); }
 input, select {
   min-width: 0;
   width: 100%;

@@ -5,49 +5,6 @@ from decimal import Decimal
 from ..domain.money import Money
 from .estimate import PriceEstimate
 
-DEFAULT_RATES_FROM_KGS: dict[str, Decimal] = {
-    "KGS": Decimal("1"),
-    "KZT": Decimal("5.5"),
-    "USD": Decimal("0.0115"),
-    "EUR": Decimal("0.0098"),
-}
-
-def convert_currency(
-    money: Money,
-    target_currency: str,
-    rates_from_kgs: dict[str, Decimal] = DEFAULT_RATES_FROM_KGS,
-) -> Money:
-    """Convert money using rates expressed relative to KGS."""
-
-    target_currency = target_currency.strip().upper()
-
-    if not target_currency:
-        raise ValueError("target_currency must not be empty")
-
-    if money.currency == target_currency:
-        return money
-
-    if money.currency not in rates_from_kgs:
-        raise ValueError(
-            f"unsupported source currency: {money.currency}"
-        )
-
-    if target_currency not in rates_from_kgs:
-        raise ValueError(
-            f"unsupported target currency: {target_currency}"
-        )
-
-    source_rate = rates_from_kgs[money.currency]
-    target_rate = rates_from_kgs[target_currency]
-
-    if source_rate <= 0 or target_rate <= 0:
-        raise ValueError("currency rates must be greater than zero")
-
-    amount_in_kgs = money.amount / source_rate
-    converted_amount = amount_in_kgs * target_rate
-
-    return Money(converted_amount, target_currency)
-
 def convert_money(
     money: Money,
     rate: Decimal,

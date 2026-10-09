@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable, Protocol, runtime_checkable
 
-from household_supply.domain.acquisition import MarketAcquisitionBatch
-from household_supply.pricing.currency import convert_currency
 from household_supply.domain import CatalogSnapshot
 from household_supply.market import (
     MarketCompilationPolicy,
@@ -48,38 +46,6 @@ def _require_aware(value: datetime, *, label: str) -> None:
 class ApplicationMarketError(RuntimeError):
     """The configured market providers could not produce an admissible market basis."""
 
-def _convert_market_batches_currency(
-    batches: tuple[MarketAcquisitionBatch, ...],
-    target_currency: str,
-) -> tuple[MarketAcquisitionBatch, ...]:
-    converted_batches: list[MarketAcquisitionBatch] = []
-
-    for batch in batches:
-        converted_observations = tuple(
-            replace(
-                observation,
-                price=(
-                    None
-                    if observation.price is None
-                    else convert_currency(
-                        observation.price,
-                        target_currency,
-                    )
-                ),
-            )
-            for observation in batch.observations
-        )
-
-        converted_batches.append(
-            MarketAcquisitionBatch(
-                provider_id=batch.provider_id,
-                acquired_at=batch.acquired_at,
-                observations=converted_observations,
-            )
-        )
-
-    return tuple(converted_batches)
-
 @dataclass(frozen=True, slots=True)
 class PlanApplicationService:
     catalog: CatalogSnapshot
@@ -119,10 +85,6 @@ class PlanApplicationService:
 
         captured_at = self.clock()
         _require_aware(captured_at, label="application capture time")
-        batches = _convert_market_batches_currency(
-            tuple(batches),
-            request.budget.currency,
-        )
         latest_acquisition = max(batch.acquired_at for batch in batches)
         if captured_at < latest_acquisition:
             raise RuntimeError(
@@ -135,6 +97,20 @@ class PlanApplicationService:
             captured_at=captured_at,
             policy=self.market_policy,
         )
+
+        # Provider evidence must remain unchanged. Without an attributable FX
+        # quote, a price in another currency cannot satisfy this budget.
+        foreign_currencies = sorted({
+            offer.price.currency
+            for offer in compilation.snapshot.offers
+            if offer.price.currency != request.budget.currency
+        })
+        if foreign_currencies:
+            raise ApplicationMarketError(
+                "market offers require explicit FX conversion before planning: "
+                + ", ".join(foreign_currencies)
+                + f" != {request.budget.currency}"
+            )
 
         problem = build_application_problem(request, compilation)
         objective_policy = request.effective_objective_policy()
