@@ -374,6 +374,8 @@ input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
 .home-filter-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 12px; }
 .home-filter-summary { color: var(--muted); font-size: .84rem; }
 .home-filter-bar .text-button { min-height: 44px; }
+.home-check-summary { margin: 0 0 10px; color: var(--muted); font-size: .84rem; }
+.stock-verification-hint { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--warm-soft); color: var(--warm); font-size: .79rem; }
 .home-items { display: grid; gap: 8px; }
 .home-card { border: 1px solid var(--line); border-radius: 16px; background: #fff; padding: 12px; }
 .home-card.pending { border-color: var(--accent); background: rgba(235,245,238,.62); }
