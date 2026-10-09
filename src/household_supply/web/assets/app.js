@@ -11,6 +11,7 @@ const state = {
   mustHaves: new Map(),
   pendingStocktakes: new Map(),
   savingStocktakes: false,
+  showAllStockItems: false,
   shoppingSession: null,
   shoppingConfirming: false,
   view: "shopping",
@@ -412,10 +413,45 @@ function renderStocktakeActions() {
     : `Сохранить изменения (${count})`;
 }
 
+function trackedStockItemIds() {
+  // A past confirmed operation is evidence that this item belongs to the home;
+  // a forecast is not. Preserve zero-balance items via authoritative history.
+  const tracked = new Set(
+    (state.household?.balances || []).map((balance) => balance.item_id),
+  );
+  for (const event of state.history) {
+    if (["inventory_correction", "purchase"].includes(event.event_type) && event.item?.id) {
+      tracked.add(event.item.id);
+    }
+  }
+  for (const itemId of state.pendingStocktakes.keys()) tracked.add(itemId);
+  return tracked;
+}
+
 function renderHome() {
   const container = byId("home-items");
   container.replaceChildren();
-  for (const item of state.catalog.items) {
+
+  const allItems = state.catalog.items.filter((item) => primarySku(item.item_id));
+  const tracked = trackedStockItemIds();
+  const trackedCount = allItems.filter((item) => tracked.has(item.item_id)).length;
+  const canFocus = trackedCount > 0 && trackedCount < allItems.length;
+  const showingAll = !canFocus || state.showAllStockItems;
+  const toggle = byId("home-filter-toggle");
+  toggle.classList.toggle("hidden", !canFocus);
+  toggle.disabled = state.savingStocktakes;
+  toggle.setAttribute("aria-pressed", String(showingAll));
+  toggle.textContent = showingAll
+    ? `Только мои товары (${trackedCount})`
+    : `Все товары (${allItems.length})`;
+  byId("home-filter-summary").textContent = showingAll
+    ? `Показаны все товары: ${allItems.length}`
+    : `Ваши товары: ${trackedCount} из ${allItems.length}`;
+
+  const visibleItems = showingAll
+    ? allItems
+    : allItems.filter((item) => tracked.has(item.item_id));
+  for (const item of visibleItems) {
     const sku = primarySku(item.item_id);
     if (!sku) continue;
     const balance = balanceForItem(item.item_id);
@@ -1388,6 +1424,11 @@ byId("discard-pending-stocktakes").addEventListener("click", () => {
   renderHome();
 });
 byId("save-pending-stocktakes").addEventListener("click", savePendingStocktakes);
+byId("home-filter-toggle").addEventListener("click", () => {
+  if (state.savingStocktakes) return;
+  state.showAllStockItems = !state.showAllStockItems;
+  renderHome();
+});
 byId("finish-shopping").addEventListener("click", () => {
   if (state.activePlan) finishShoppingSession(state.activePlan);
 });

@@ -410,6 +410,27 @@ def test_mass_market_russian_ux_contract_has_no_primary_unit_selector() -> None:
     assert "collectMustHaves" in javascript
 
 
+def test_home_stocktake_focus_only_uses_confirmed_household_evidence() -> None:
+    app = make_web_app()
+    start, html_body = asyncio.run(asgi_request(app, method="GET", path="/"))
+    assert start["status"] == 200
+    html = html_body["body"].decode("utf-8")
+    assert 'id="home-filter-summary"' in html
+    assert 'id="home-filter-toggle"' in html
+    assert 'id="home-items"' in html
+
+    start, js_body = asyncio.run(asgi_request(app, method="GET", path="/assets/app.js"))
+    assert start["status"] == 200
+    javascript = js_body["body"].decode("utf-8")
+    assert "trackedStockItemIds()" in javascript
+    assert '["inventory_correction", "purchase"]' in javascript
+    assert "state.pendingStocktakes.keys()" in javascript
+    assert "trackedCount > 0 && trackedCount < allItems.length" in javascript
+    assert "state.showAllStockItems" in javascript
+    assert 'byId("home-filter-toggle").addEventListener("click"' in javascript
+    assert "renderStocktakeActions();" in javascript
+
+
 def test_local_web_refuses_remote_binding_by_default() -> None:
     with pytest.raises(ValueError, match="non-loopback"):
         serve_local_web(object(), host="0.0.0.0")

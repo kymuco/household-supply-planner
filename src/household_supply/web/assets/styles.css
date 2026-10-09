@@ -371,6 +371,9 @@ input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
 .explanation-item small { color: var(--muted); line-height: 1.45; }
 .human-note { margin: 17px 0 0; padding: 12px 14px; border-radius: 13px; background: #f4f6f2; font-size: .82rem; }
 
+.home-filter-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 12px; }
+.home-filter-summary { color: var(--muted); font-size: .84rem; }
+.home-filter-bar .text-button { min-height: 44px; }
 .home-items { display: grid; gap: 8px; }
 .home-card { border: 1px solid var(--line); border-radius: 16px; background: #fff; padding: 12px; }
 .home-card.pending { border-color: var(--accent); background: rgba(235,245,238,.62); }
