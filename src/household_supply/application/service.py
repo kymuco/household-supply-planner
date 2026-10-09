@@ -98,20 +98,9 @@ class PlanApplicationService:
             policy=self.market_policy,
         )
 
-        # Provider evidence must remain unchanged. Without an attributable FX
-        # quote, a price in another currency cannot satisfy this budget.
-        foreign_currencies = sorted({
-            offer.price.currency
-            for offer in compilation.snapshot.offers
-            if offer.price.currency != request.budget.currency
-        })
-        if foreign_currencies:
-            raise ApplicationMarketError(
-                "market offers require explicit FX conversion before planning: "
-                + ", ".join(foreign_currencies)
-                + f" != {request.budget.currency}"
-            )
-
+        # The planner admits only offers priced in the budget currency.
+        # Foreign offers remain in attributable market evidence but cannot
+        # enter the plan; no implicit FX conversion is performed here.
         problem = build_application_problem(request, compilation)
         objective_policy = request.effective_objective_policy()
         plan = build_multi_objective_plan(problem, objective_policy)

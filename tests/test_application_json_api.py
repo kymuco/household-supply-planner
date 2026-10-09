@@ -53,13 +53,14 @@ def test_json_payload_rejects_float_money() -> None:
     assert "float is not accepted" in response.body["detail"]
 
 
-def test_json_api_rejects_unquoted_fx_budget() -> None:
+def test_json_api_reports_infeasible_without_matching_currency_offers() -> None:
     payload = request_payload()
     payload["budget"]["currency"] = "KZT"
     response = PlanJsonApi(make_service()).handle("POST", "/plans", payload)
-    assert response.status == 502
-    assert response.body["error"] == "market_unavailable"
-    assert "explicit FX conversion" in response.body["detail"]
+    assert response.status == 200
+    assert response.body["status"] == "infeasible"
+    assert response.body["total_cost"] == {"amount": "0", "currency": "KZT"}
+    assert response.body["infeasibility_reasons"]
 
 
 def test_json_api_returns_plan_and_market_summary() -> None:
