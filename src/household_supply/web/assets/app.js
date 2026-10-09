@@ -413,17 +413,23 @@ function renderStocktakeActions() {
     : `Сохранить изменения (${count})`;
 }
 
-function trackedStockItemIds() {
-  // A past confirmed operation is evidence that this item belongs to the home;
-  // a forecast is not. Preserve zero-balance items via authoritative history.
-  const tracked = new Set(
+function confirmedStockItemIds() {
+  // Only confirmed household evidence activates focus. Pending updates must
+  // not collapse a first-time user's full catalog during their first batch.
+  const confirmed = new Set(
     (state.household?.balances || []).map((balance) => balance.item_id),
   );
   for (const event of state.history) {
     if (["inventory_correction", "purchase"].includes(event.event_type) && event.item?.id) {
-      tracked.add(event.item.id);
+      confirmed.add(event.item.id);
     }
   }
+  return confirmed;
+}
+
+function trackedStockItemIds(confirmed = confirmedStockItemIds()) {
+  const tracked = new Set(confirmed);
+  // Keep unsaved selections visible inside an already focused household.
   for (const itemId of state.pendingStocktakes.keys()) tracked.add(itemId);
   return tracked;
 }
@@ -433,9 +439,11 @@ function renderHome() {
   container.replaceChildren();
 
   const allItems = state.catalog.items.filter((item) => primarySku(item.item_id));
-  const tracked = trackedStockItemIds();
+  const confirmed = confirmedStockItemIds();
+  const tracked = trackedStockItemIds(confirmed);
   const trackedCount = allItems.filter((item) => tracked.has(item.item_id)).length;
-  const canFocus = trackedCount > 0 && trackedCount < allItems.length;
+  const confirmedCount = allItems.filter((item) => confirmed.has(item.item_id)).length;
+  const canFocus = confirmedCount > 0 && confirmedCount < allItems.length;
   const showingAll = !canFocus || state.showAllStockItems;
   const toggle = byId("home-filter-toggle");
   toggle.classList.toggle("hidden", !canFocus);

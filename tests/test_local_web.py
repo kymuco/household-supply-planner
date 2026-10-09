@@ -422,10 +422,11 @@ def test_home_stocktake_focus_only_uses_confirmed_household_evidence() -> None:
     start, js_body = asyncio.run(asgi_request(app, method="GET", path="/assets/app.js"))
     assert start["status"] == 200
     javascript = js_body["body"].decode("utf-8")
-    assert "trackedStockItemIds()" in javascript
+    assert "confirmedStockItemIds()" in javascript
+    assert "trackedStockItemIds(confirmed)" in javascript
     assert '["inventory_correction", "purchase"]' in javascript
     assert "state.pendingStocktakes.keys()" in javascript
-    assert "trackedCount > 0 && trackedCount < allItems.length" in javascript
+    assert "confirmedCount > 0 && confirmedCount < allItems.length" in javascript
     assert "state.showAllStockItems" in javascript
     assert 'byId("home-filter-toggle").addEventListener("click"' in javascript
     assert "renderStocktakeActions();" in javascript
