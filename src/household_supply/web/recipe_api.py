@@ -113,17 +113,17 @@ class RecipeWebApi:
                 "recipe": _recipe_body(assessment),
                 "estimate_only": True,
                 "plan": None,
-                "minimum_shop_cost": None,
+                "estimated_purchase_cost": None,
                 "budget": {"amount": str(budget.amount), "currency": budget.currency},
             }
             if assessment.status == "covered":
-                data["minimum_shop_cost"] = _quantity_cost(Money(0, budget.currency))
+                data["estimated_purchase_cost"] = _quantity_cost(Money(0, budget.currency))
             request = recipe_missing_request(assessment, budget=budget)
             if request is not None:
                 result = self.planner.plan(request)
                 data["plan"] = serialize_plan_result(result)
                 if result.plan.status.value == "feasible":
-                    data["minimum_shop_cost"] = _quantity_cost(result.plan.total_cost)
+                    data["estimated_purchase_cost"] = _quantity_cost(result.plan.total_cost)
             return JsonApiResponse(200, data)
         except (ValueError, TypeError, JsonPayloadError, ApplicationRequestError) as exc:
             return JsonApiResponse(422, {"error": "invalid_request", "detail": str(exc)})

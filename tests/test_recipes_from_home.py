@@ -64,7 +64,7 @@ def test_unobserved_stock_is_unknown_not_zero_and_market_is_not_queried(tmp_path
     q = _quote(api)
     assert q.status == 200
     assert q.body["recipe"]["status"] == "unverified"
-    assert q.body["minimum_shop_cost"] is None
+    assert q.body["estimated_purchase_cost"] is None
     assert q.body["plan"] is None
     assert api.handle("GET", "/household/history").body == before
     assert api.handle("GET", "/plans?limit=12").body["plans"] == []
@@ -83,7 +83,7 @@ def test_known_shortfall_costs_whole_market_packages_not_partial_units(tmp_path)
     assert ingredients["milk"]["missing"] == {"amount": "300", "unit": "ml"}
     assert ingredients["rice"]["status"] == "covered"
     assert body["plan"]["status"] == "feasible"
-    assert body["minimum_shop_cost"] == {"amount": "120", "currency": "KGS"}
+    assert body["estimated_purchase_cost"] == {"amount": "120", "currency": "KGS"}
     assert len(body["plan"]["purchases"]) == 1
     assert body["plan"]["purchases"][0]["packs"] == 1
     assert api.handle("GET", "/plans?limit=12").body["plans"] == []
@@ -103,7 +103,7 @@ def test_zero_is_observed_absence_and_full_coverage_has_zero_cost(tmp_path):
     full = _quote(api)
     assert full.status == 200
     assert full.body["recipe"]["status"] == "covered"
-    assert full.body["minimum_shop_cost"] == {"amount": "0", "currency": "KGS"}
+    assert full.body["estimated_purchase_cost"] == {"amount": "0", "currency": "KGS"}
     assert full.body["plan"] is None
     assert api.handle("GET", "/plans?limit=12").body["plans"] == []
 
@@ -116,7 +116,7 @@ def test_budget_shortfall_uses_planner_infeasibility(tmp_path):
     assert quote.status == 200
     assert quote.body["recipe"]["status"] == "short"
     assert quote.body["plan"]["status"] == "infeasible"
-    assert quote.body["minimum_shop_cost"] is None
+    assert quote.body["estimated_purchase_cost"] is None
 
 
 def test_recipe_endpoint_rejects_unknown_unsupported_and_bad_methods(tmp_path):

@@ -1957,7 +1957,7 @@ function renderRecipeList() {
           const lines = (data.plan.purchases || []).map(
             (entry) => `${itemName(entry.item_id)}: ${packageText(entry.packs)}`,
           );
-          result.textContent = `Стоимость доступных упаковок: ${moneyText(data.minimum_shop_cost)}. ${lines.join("; ")}. Это предпросмотр; покупки не оформлены.`;
+          result.textContent = `Стоимость доступных упаковок: ${moneyText(data.estimated_purchase_cost)}. ${lines.join("; ")}. Это предпросмотр; покупки не оформлены.`;
         } else {
           result.textContent = "При текущем бюджете или предложениях магазинов не удалось покрыть все недостающие ингредиенты.";
         }
