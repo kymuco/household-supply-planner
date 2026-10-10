@@ -22,7 +22,7 @@ from household_supply.household import HouseholdLearningService
 
 
 def _quantity(value: Quantity | None) -> dict[str, str] | None:
-    return None if value is None else {"amount": str(value.amount), "unit": value.unit}
+    return None if value is None else {"amount": format(value.amount.normalize(), "f"), "unit": value.unit}
 
 
 def _recipe_body(assessment: RecipeAssessment) -> dict[str, Any]:
@@ -104,6 +104,8 @@ class RecipeWebApi:
             obj = _require_mapping(payload, label="recipe quote")
             _require_keys(obj, label="recipe quote", required={"budget"})
             budget = _parse_money(obj["budget"], label="budget")
+            if budget.amount < 0:
+                raise JsonPayloadError("recipe budget cannot be negative")
             assessment = assess_recipe(
                 recipe, household=self.household.state(as_of=self.clock())
             )
