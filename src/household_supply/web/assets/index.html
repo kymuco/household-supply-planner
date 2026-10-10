@@ -48,6 +48,14 @@
         <button class="secondary-button" id="start-home-setup" type="button">Отметить запасы</button>
       </div>
 
+      <details class="secondary-operation recipes-panel" id="recipes-panel">
+        <summary>Что приготовить из того, что есть дома?</summary>
+        <p>Рецепты опираются на последние записанные остатки. Если продукт давно не проверяли, уточните количество перед готовкой.</p>
+        <button class="secondary-button" type="button" id="refresh-recipes">Обновить по остаткам</button>
+        <p id="recipes-status" aria-live="polite"></p>
+        <div id="recipes-list" class="recipes-list"></div>
+      </details>
+
       <details class="secondary-operation usual-basket-panel hidden" id="usual-basket-panel">
         <summary>Моя обычная закупка</summary>
         <p>Выберите привычные товары. Если истории расхода пока нет, можно явно указать резервное количество на эту закупку.</p>

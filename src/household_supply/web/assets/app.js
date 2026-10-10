@@ -22,6 +22,8 @@ const state = {
   usualBasketSaving: false,
   usualBasketPreviewId: null,
   usualBasketPreviewRevision: 0,
+  recipes: [],
+  recipeQuoteRevision: 0,
   usualBasketRepeatSettings: null,
   usualBasketRepeating: false,
 };
@@ -1886,6 +1888,106 @@ async function previewUsualBasket() {
   }
 }
 
+// M12.8: recipe explanations are based only on recorded household facts.
+// Quoting a recipe never writes a plan or a purchase event.
+function recipeStatusText(recipe) {
+  if (recipe.status === "covered") return "По учёту всё есть";
+  if (recipe.status === "short") return `Докупить: ${recipe.missing_count} поз.`;
+  return "Нужно уточнить остатки";
+}
+
+function renderRecipeList() {
+  const list = byId("recipes-list");
+  list.replaceChildren();
+  const recipes = state.recipes;
+  byId("recipes-status").textContent = recipes.length
+    ? `Подобрано рецептов из каталога: ${recipes.length}. Это ориентир по учёту, не проверка продуктов в холодильнике.`
+    : "В текущем каталоге нет рецептов с полным набором известных ингредиентов.";
+  for (const recipe of recipes) {
+    const card = document.createElement("details");
+    card.className = "recipe-card";
+    const summary = document.createElement("summary");
+    summary.textContent = `${recipe.name} · ${recipeStatusText(recipe)}`;
+    const meta = document.createElement("p");
+    meta.className = "recipe-meta";
+    meta.textContent = `${recipe.cuisine} · ${recipe.category} · ${recipe.servings} порции`;
+    const ingredients = document.createElement("ul");
+    for (const entry of recipe.ingredients) {
+      const row = document.createElement("li");
+      const status = entry.status === "covered" ? "есть по учёту"
+        : entry.status === "short" ? `нужно ${humanQuantity(entry.missing)}`
+        : "остаток неизвестен";
+      row.textContent = `${itemName(entry.item_id)} — ${humanQuantity(entry.required)}; ${status}`;
+      ingredients.appendChild(row);
+    }
+    const steps = document.createElement("ol");
+    for (const step of recipe.steps) {
+      const row = document.createElement("li");
+      row.textContent = step;
+      steps.appendChild(row);
+    }
+    const actions = document.createElement("div");
+    actions.className = "recipe-actions";
+    const quoteButton = document.createElement("button");
+    quoteButton.type = "button";
+    quoteButton.className = "secondary-button";
+    quoteButton.textContent = "Проверить стоимость недостающего";
+    const result = document.createElement("p");
+    result.className = "recipe-quote";
+    result.setAttribute("aria-live", "polite");
+    quoteButton.addEventListener("click", async () => {
+      const generation = state.recipeQuoteRevision;
+      quoteButton.disabled = true;
+      result.textContent = "Проверяем данные…";
+      try {
+        const budget = normalizeNumberInput(byId("plan-budget").value);
+        if (!budget) throw new Error("Укажите бюджет в форме покупок.");
+        const data = await request(`/recipes/${encodeURIComponent(recipe.recipe_id)}/quote`, {
+          method: "POST",
+          body: JSON.stringify({
+            budget: {amount: budget, currency: byId("plan-currency").value},
+          }),
+        });
+        if (generation !== state.recipeQuoteRevision) return;
+        if (data.recipe.status === "unverified") {
+          result.textContent = "Не все остатки проверены. Сначала уточните домашние запасы.";
+        } else if (data.recipe.status === "covered") {
+          result.textContent = "По учёту докупать ничего не нужно (0 сом).";
+        } else if (data.plan?.status === "feasible") {
+          const lines = (data.plan.purchases || []).map(
+            (entry) => `${itemName(entry.item_id)}: ${packageText(entry.packs)}`,
+          );
+          result.textContent = `Стоимость доступных упаковок: ${moneyText(data.minimum_shop_cost)}. ${lines.join("; ")}. Это предпросмотр; покупки не оформлены.`;
+        } else {
+          result.textContent = "При текущем бюджете или предложениях магазинов не удалось покрыть все недостающие ингредиенты.";
+        }
+      } catch (error) {
+        if (generation === state.recipeQuoteRevision) result.textContent = friendlyError(error);
+      } finally {
+        quoteButton.disabled = false;
+      }
+    });
+    actions.append(quoteButton, result);
+    card.append(summary, meta, ingredients, steps, actions);
+    if (recipe.source_url) {
+      const link = document.createElement("a");
+      link.href = recipe.source_url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = `Первоисточник: ${recipe.attribution || "открыть"}`;
+      card.appendChild(link);
+    }
+    list.appendChild(card);
+  }
+}
+
+async function loadRecipes() {
+  const response = await request("/recipes");
+  state.recipes = response.recipes || [];
+  state.recipeQuoteRevision += 1;
+  renderRecipeList();
+}
+
 async function refreshAll() {
   try {
     setConnection(false, "Подключаемся…");
@@ -1896,6 +1998,7 @@ async function refreshAll() {
     renderMustHaves();
     await loadUsualBasket();
     await refreshOperationalState();
+    await loadRecipes();
     setConnection(true, "Работает");
   } catch (error) {
     setConnection(false, "Нет связи");
@@ -1908,6 +2011,13 @@ for (const button of document.querySelectorAll("[data-view]")) {
 }
 
 byId("start-home-setup").addEventListener("click", () => setView("home"));
+byId("refresh-recipes").addEventListener("click", async () => {
+  try {
+    await loadRecipes();
+  } catch (error) {
+    showToast(friendlyError(error), true);
+  }
+});
 byId("save-usual-basket").addEventListener("click", saveUsualBasket);
 byId("preview-usual-basket").addEventListener("click", previewUsualBasket);
 byId("repeat-usual-basket").addEventListener("click", repeatUsualBasket);
