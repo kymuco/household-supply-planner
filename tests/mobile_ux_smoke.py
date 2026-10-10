@@ -526,12 +526,82 @@ def routine_stand_preview(browser) -> None:
         )
 
 
+def recipes_from_home(browser) -> None:
+    """Unknown inventory, followed by observed shortfall and full-package quote."""
+    with demo() as base:
+        browser.get(base + "/")
+        wait = WebDriverWait(browser, 20)
+        wait.until(lambda d: d.find_element(By.CSS_SELECTOR, "#connection-status.online"))
+        onboarding = browser.find_element(By.ID, "onboarding-layer")
+        if onboarding.is_displayed():
+            browser.find_element(By.ID, "onboarding-skip").click()
+        panel = browser.find_element(By.ID, "recipes-panel")
+        summary = panel.find_element(By.TAG_NAME, "summary")
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            summary,
+        )
+        summary.click()
+        wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, "#recipes-list .recipe-card"))
+        first = browser.find_element(By.CSS_SELECTOR, "#recipes-list .recipe-card")
+        assert "Нужно уточнить остатки" in first.text
+        screenshot(browser, "16-recipes-unknown-stock")
+        assert api(base, "/plans?limit=12")["plans"] == []
+
+        api(base, "/household/stocktakes", {
+            "event_id": "recipe-mobile-rice",
+            "item_id": "rice",
+            "quantity": {"amount": "1", "unit": "kg"},
+            "reason": "fresh kitchen count",
+        })
+        api(base, "/household/stocktakes", {
+            "event_id": "recipe-mobile-milk",
+            "item_id": "milk",
+            "quantity": {"amount": "100", "unit": "ml"},
+            "reason": "fresh kitchen count",
+        })
+        refresh = browser.find_element(By.ID, "refresh-recipes")
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            refresh,
+        )
+        refresh.click()
+        wait.until(lambda d: "Докупить: 1 поз." in d.find_element(
+            By.ID, "recipes-list"
+        ).text)
+        first = browser.find_element(By.CSS_SELECTOR, "#recipes-list .recipe-card")
+        summary = first.find_element(By.TAG_NAME, "summary")
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            summary,
+        )
+        summary.click()
+        quote = first.find_element(By.CSS_SELECTOR, ".recipe-actions button")
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            quote,
+        )
+        quote.click()
+        wait.until(lambda d: "120 сом" in d.find_element(
+            By.CSS_SELECTOR, "#recipes-list .recipe-quote"
+        ).text)
+        assert "предпросмотр" in browser.find_element(
+            By.CSS_SELECTOR, "#recipes-list .recipe-quote"
+        ).text
+        assert api(base, "/plans?limit=12")["plans"] == []
+        assert api(base, "/household/history")["event_count"] == 2
+        viewport_check(browser, "cook-from-home quote")
+        screenshot(browser, "17-recipes-price-quote-no-purchase")
+        print("PASS recipes: unknown stock, fresh stock, package quote, no silent writes", flush=True)
+
+
 def main() -> None:
     with mobile_browser() as browser:
         onboarding_wizard(browser)
         first_batch(browser)
         reminder_reentry(browser)
         routine_stand_preview(browser)
+        recipes_from_home(browser)
     print("MOBILE_UX_SMOKE_OK", flush=True)
 
 
