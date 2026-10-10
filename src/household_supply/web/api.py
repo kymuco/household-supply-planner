@@ -1,5 +1,6 @@
-from .recipe_api import RecipeWebApi
 from __future__ import annotations
+
+from .recipe_api import RecipeWebApi
 
 from dataclasses import dataclass
 from typing import Any, Mapping
