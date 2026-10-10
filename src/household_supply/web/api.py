@@ -1,3 +1,4 @@
+from .recipe_api import RecipeWebApi
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -139,9 +140,15 @@ class HouseholdWebJsonApi:
     catalog: CatalogSnapshot
     reset_service: LocalDataResetService | None = None
     usual_basket_api: UsualBasketWebApi | None = None
+    recipe_api: RecipeWebApi | None = None
 
     def accepts_json_body(self, method: str, path: str) -> bool:
         target = urlsplit(path)
+        if (
+            self.recipe_api is not None
+            and self.recipe_api.accepts_json_body(method, path)
+        ):
+            return True
         if (
             self.usual_basket_api is not None
             and self.usual_basket_api.accepts_json_body(method, path)
@@ -166,6 +173,11 @@ class HouseholdWebJsonApi:
         target = urlsplit(path)
         if target.scheme or target.netloc or target.fragment:
             return JsonApiResponse(400, {"error": "invalid_request_target"})
+
+        if target.path == "/recipes" or target.path.startswith("/recipes/"):
+            if self.recipe_api is None:
+                return JsonApiResponse(404, {"error": "not_found"})
+            return self.recipe_api.handle(method, path, payload)
 
         if target.path in {"/household/usual-basket", "/household/usual-basket/preview", "/household/usual-basket/confirm", "/household/usual-basket/last-settings"}:
             if self.usual_basket_api is None:
