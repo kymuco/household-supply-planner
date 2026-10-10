@@ -641,3 +641,12 @@ body.onboarding-open { overflow: hidden; }
 #confirm-usual-basket { width: 100%; min-height: 44px; margin-block: 12px 6px; }
 
 #repeat-usual-basket { min-height: 44px; scroll-margin-block: 120px; }
+
+.recipes-list { display: grid; gap: 9px; margin-top: 12px; }
+.recipe-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fff; }
+.recipe-card summary { cursor: pointer; font-weight: 650; }
+.recipe-card ul, .recipe-card ol { margin-block: 10px; padding-left: 22px; }
+.recipe-card li { padding-block: 3px; }
+.recipe-meta, .recipe-quote, #recipes-status { color: var(--muted); font-size: .87rem; }
+.recipe-actions { margin-top: 10px; display: grid; gap: 8px; }
+.recipe-actions button { min-height: 44px; scroll-margin-block: 100px; }

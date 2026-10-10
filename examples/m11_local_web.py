@@ -46,6 +46,7 @@ from household_supply.web import (
     HouseholdWebJsonApi,
     serve_local_web,
     UsualBasketWebApi,
+    RecipeWebApi,
 )
 
 
@@ -140,6 +141,7 @@ def _build_web_app(
     )
     web_api = HouseholdWebJsonApi(
         closed_loop, catalog, reset_service,
+        recipe_api=RecipeWebApi(household, planner, clock=utc_now),
         usual_basket_api=UsualBasketWebApi(
             usual_basket, planner,
             confirmation=UsualBasketPlanCommitService(usual_basket, lifecycle),
