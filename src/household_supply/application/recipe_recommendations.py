@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 from typing import Callable
 
 from household_supply.application.recipe_assessment import (
@@ -167,7 +168,7 @@ def recommend_recipes(
             rank[item["verdict"]],
             item["missing_count"],
             item["unverified_count"],
-            item["estimated_purchase_cost"]["amount"] if item["estimated_purchase_cost"] else "",
+            Decimal(item["estimated_purchase_cost"]["amount"]) if item["estimated_purchase_cost"] else Decimal(0),
             item["name"],
             item["recipe_id"],
         )
