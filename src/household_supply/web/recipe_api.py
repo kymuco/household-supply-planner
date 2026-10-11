@@ -19,6 +19,9 @@ from household_supply.application.recipe_commit import (
 from household_supply.application.recipe_assessment import (
     RecipeAssessment, assess_recipe, recipe_missing_request,
 )
+from household_supply.application.recipe_recommendations import (
+    RecipeRecommendationConflict, recommend_recipes,
+)
 from household_supply.application.recipe_catalog import CuratedRecipe, available_recipe_pack
 from household_supply.application.service import ApplicationMarketError, ApplicationPlanner
 from household_supply.domain import Money, Quantity
@@ -66,8 +69,13 @@ class RecipeWebApi:
         parts = urlsplit(path)
         return (
             method.strip().upper() == "POST"
-            and parts.path.startswith("/recipes/")
-            and (parts.path.endswith("/quote") or parts.path.endswith("/confirm"))
+            and (
+                parts.path == "/recipes/recommend"
+                or (
+                    parts.path.startswith("/recipes/")
+                    and (parts.path.endswith("/quote") or parts.path.endswith("/confirm"))
+                )
+            )
         )
 
     def handle(
@@ -79,6 +87,55 @@ class RecipeWebApi:
         method = method.strip().upper()
         pack = available_recipe_pack(self.planner.catalog)
         lookup = {entry.recipe.id: entry for entry in pack}
+        if url.path == "/recipes/recommend":
+            if method != "POST":
+                return JsonApiResponse(405, {"error": "method_not_allowed"})
+            try:
+                data = _require_mapping(payload, label="recipe recommendations")
+                if set(data) - {"budget", "category", "limit"} or "budget" not in data:
+                    raise JsonPayloadError("expected budget, optional category and limit only")
+                budget = _parse_money(data["budget"], label="budget")
+                category = data.get("category", "all")
+                if not isinstance(category, str) or not 1 <= len(category) <= 80:
+                    raise JsonPayloadError("invalid recipe category")
+                limit = data.get("limit", 6)
+                if type(limit) is not int or not 1 <= limit <= 6:
+                    raise JsonPayloadError("recommendation limit must be integer 1-6")
+                ranked = recommend_recipes(
+                    recipes=pack, household=self.household, planner=self.planner,
+                    budget=budget, category=category, limit=limit,
+                    clock=self.clock,
+                )
+                return JsonApiResponse(200, {
+                    "recommendations": list(ranked.recommendations),
+                    "categories": list(ranked.categories),
+                    "category": ranked.category,
+                    "available_count": ranked.available_count,
+                    "returned_count": len(ranked.recommendations),
+                    "budget": {
+                        "amount": str(ranked.budget.amount),
+                        "currency": ranked.budget.currency,
+                    },
+                    "max_quoted_recipes": 6,
+                    "estimate_only": True,
+                    "inventory_updated": False,
+                    "plan_saved": False,
+                    "checkout_confirmed": False,
+                    "notice": (
+                        "Рекомендации основаны на записанных запасах и свежем "
+                        "расчёте целых упаковок. Неизвестный остаток не равен нулю. "
+                        "Стоимость не гарантирует наличие при покупке; "
+                        "план сохраняется только после отдельного подтверждения рецепта."
+                    ),
+                })
+            except RecipeRecommendationConflict as exc:
+                return JsonApiResponse(
+                    409, {"error": "stale_recipe_recommendation", "detail": str(exc)}
+                )
+            except (ValueError, TypeError, JsonPayloadError) as exc:
+                return JsonApiResponse(
+                    422, {"error": "invalid_recipe_recommendation", "detail": str(exc)}
+                )
         if url.path == "/recipes":
             if method != "GET":
                 return JsonApiResponse(405, {"error": "method_not_allowed"})
