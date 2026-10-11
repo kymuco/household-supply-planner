@@ -999,6 +999,110 @@ def mixed_receipt_review_mobile(browser) -> None:
         print("PASS receipt review: 2 steps, actual mass, one atomic purchase", flush=True)
 
 
+def recipe_recommendations_mobile(browser) -> None:
+    """#28: category/budget recommendations, pantry truth, exact plan handoff."""
+    with demo() as base:
+        browser.get(base + "/")
+        wait = WebDriverWait(browser, 20)
+        wait.until(lambda d: d.find_element(By.CSS_SELECTOR, "#connection-status.online"))
+        layer = browser.find_element(By.ID, "onboarding-layer")
+        if layer.is_displayed():
+            browser.find_element(By.ID, "onboarding-skip").click()
+        panel = browser.find_element(By.ID, "recipes-panel")
+        summary = panel.find_element(By.TAG_NAME, "summary")
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            summary,
+        )
+        summary.click()
+        wait.until(lambda d: len(Select(d.find_element(
+            By.ID, "recipe-recommend-category"
+        )).options) > 1)
+        Select(browser.find_element(By.ID, "recipe-recommend-category")).select_by_value(
+            "завтрак"
+        )
+        budget = browser.find_element(By.ID, "recipe-recommend-budget")
+        budget.clear()
+        budget.send_keys("120")
+        recommend = browser.find_element(By.ID, "recipe-recommend-submit")
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            recommend,
+        )
+        recommend.click()
+        wait.until(lambda d: "остатки" in d.find_element(
+            By.ID, "recipe-recommend-results"
+        ).text)
+        assert api(base, "/plans?limit=10")["plans"] == []
+        assert api(base, "/household/history")["event_count"] == 0
+
+        for index, item, amount, unit in (
+            (1, "rice", "1", "kg"),
+            (2, "milk", "100", "ml"),
+        ):
+            api(base, "/household/stocktakes", {
+                "event_id": f"recommend-mobile-{index}",
+                "item_id": item,
+                "quantity": {"amount": amount, "unit": unit},
+                "reason": "physically checked in recipe smoke",
+            })
+        refresh = browser.find_element(By.ID, "refresh-recipes")
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            refresh,
+        )
+        refresh.click()
+        wait.until(lambda d: "Докупить: 1 поз." in d.find_element(
+            By.ID, "recipes-list"
+        ).text)
+        assert not browser.find_element(By.ID, "recipe-recommend-results").text
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            recommend,
+        )
+        recommend.click()
+        wait.until(lambda d: "120 сом" in d.find_element(
+            By.ID, "recipe-recommend-results"
+        ).text)
+        assert api(base, "/plans?limit=10")["plans"] == []
+        assert api(base, "/household/history")["event_count"] == 2
+        viewport_check(browser, "recipe recommendations budget preview")
+        screenshot(browser, "23-recipes-budget-recommendation")
+
+        open_recipe = browser.find_element(
+            By.CSS_SELECTOR, ".recipe-recommend-card button"
+        )
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            open_recipe,
+        )
+        open_recipe.click()
+        card = next(x for x in browser.find_elements(
+            By.CSS_SELECTOR, ".recipe-card"
+        ) if x.get_attribute("data-recipe-id") == "milk-rice")
+        assert card.get_attribute("open") is not None
+        assert browser.find_element(By.ID, "plan-budget").get_attribute("value") == "120"
+        quote = card.find_element(By.CSS_SELECTOR, ".recipe-actions button")
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            quote,
+        )
+        quote.click()
+        wait.until(lambda d: "120 сом" in card.find_element(
+            By.CLASS_NAME, "recipe-quote"
+        ).text)
+        save = card.find_element(By.CSS_SELECTOR, ".recipe-actions .primary-button")
+        assert save.is_enabled()
+        browser.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
+            save,
+        )
+        save.click()
+        wait.until(lambda d: len(api(base, "/plans?limit=10")["plans"]) == 1)
+        assert api(base, "/household/history")["event_count"] == 2
+        print("PASS issue #28: category/budget matching, grounded quote, explicit recipe save", flush=True)
+
+
 def main() -> None:
     with mobile_browser() as browser:
         onboarding_wizard(browser)
@@ -1006,6 +1110,7 @@ def main() -> None:
         reminder_reentry(browser)
         routine_stand_preview(browser)
         recipes_from_home(browser)
+        recipe_recommendations_mobile(browser)
         shared_weighted_shopping_readiness(browser)
         mixed_receipt_review_mobile(browser)
     print("MOBILE_UX_SMOKE_OK", flush=True)
