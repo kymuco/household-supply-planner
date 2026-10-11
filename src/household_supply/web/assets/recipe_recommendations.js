@@ -36,8 +36,7 @@
     return q ? `${q.amount} ${q.unit}` : "—";
   }
   function labelFor(id) {
-    const option = window.HSMRecipeRecommendationNames?.get(id);
-    return option || id;
+    return typeof itemName === "function" ? itemName(id) : id;
   }
   function reason(item) {
     if (item.verdict === "on_hand") return "Все ингредиенты есть по учёту; докупать не нужно.";
@@ -53,17 +52,19 @@
     return "Нет полного доступного плана в этом бюджете или нет нужных предложений.";
   }
   function openRecipe(item) {
+    const globalBudget = by("plan-budget");
+    // The existing exact recipe quote uses the main planner's budget.
+    // Keep it consistent with the recommendation the operator just reviewed.
+    globalBudget.value = numberValue(budget.value);
+    globalBudget.dispatchEvent(new Event("input", { bubbles: true }));
+    // Updating the main budget correctly discards old quote cards and
+    // re-renders them; only find the target after that invalidation.
     const match = [...by("recipes-list").querySelectorAll(".recipe-card")]
       .find(card => card.dataset.recipeId === item.recipe_id);
     if (!match) {
       status.textContent = "Этот рецепт больше не доступен в каталоге. Обновите список.";
       return;
     }
-    const globalBudget = by("plan-budget");
-    // The existing exact recipe quote uses the main planner's budget.
-    // Keep it consistent with the recommendation the operator just reviewed.
-    globalBudget.value = numberValue(budget.value);
-    globalBudget.dispatchEvent(new Event("input", { bubbles: true }));
     match.open = true;
     match.scrollIntoView({ block: "center", behavior: "smooth" });
     const quote = match.querySelector(".recipe-actions button");
