@@ -1488,6 +1488,7 @@ async function refreshOperationalState() {
   state.reports = estimates.reports || [];
   state.history = history.events || [];
   state.plans = plans.plans || [];
+  window.HSMRecipeRecommendations?.invalidate();
   renderFirstRun();
   renderHome();
   renderLearning();
@@ -1916,6 +1917,7 @@ function renderRecipeList() {
   for (const recipe of recipes) {
     const card = document.createElement("details");
     card.className = "recipe-card";
+    card.dataset.recipeId = recipe.recipe_id;
     const summary = document.createElement("summary");
     summary.textContent = `${recipe.name} · ${recipeStatusText(recipe)}`;
     const meta = document.createElement("p");
@@ -2249,6 +2251,7 @@ async function previewSharedWeight() {
 async function loadRecipes() {
   const response = await request("/recipes");
   state.recipes = response.recipes || [];
+  window.HSMRecipeRecommendations?.configure(state.recipes);
   state.recipeQuoteRevision += 1;
   renderRecipeList();
 }

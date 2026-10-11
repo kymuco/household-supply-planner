@@ -747,3 +747,43 @@ body.onboarding-open { overflow: hidden; }
 @media (max-width: 360px) {
   .mixed-shopping-demand-row { grid-template-columns: minmax(0, 1fr) 65px 65px; gap: 5px; }
 }
+
+/* M12.20: recipe recommendations are read-only and never an implicit cart. */
+.recipe-recommend-form {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 12px;
+  min-width: 0;
+}
+.recipe-recommend-form > label { font-size: .9rem; font-weight: 600; }
+.recipe-recommend-form > input,
+.recipe-recommend-form > select,
+#recipe-recommend-submit {
+  min-height: 44px;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+.recipe-recommend-results {
+  display: grid;
+  gap: 12px;
+  margin-block: 14px;
+}
+.recipe-recommend-card {
+  border: 1px solid var(--line, #d8dcdd);
+  border-radius: 14px;
+  padding: 14px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.recipe-recommend-card p { margin-block: 7px; font-size: .9rem; }
+.recipe-recommend-card ul { margin: 8px 0 12px; padding-left: 22px; }
+.recipe-recommend-card button { width: 100%; min-height: 44px; }
+#recipe-recommend-status { margin-block: 8px; }
+@media (min-width: 780px) {
+  .recipe-recommend-form {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+  }
+  .recipe-recommend-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

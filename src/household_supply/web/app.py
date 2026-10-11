@@ -129,6 +129,9 @@ _ASSETS = {
     "/assets/mixed_shopping_workflow.js": _StaticAsset(
         "mixed_shopping_workflow.js", b"text/javascript; charset=utf-8", b"no-cache"
     ),
+    "/assets/recipe_recommendations.js": _StaticAsset(
+        "recipe_recommendations.js", b"text/javascript; charset=utf-8", b"no-cache"
+    ),
     "/assets/styles.css": _StaticAsset(
         "styles.css", b"text/css; charset=utf-8", b"no-cache"
     ),
