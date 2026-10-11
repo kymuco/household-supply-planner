@@ -112,6 +112,16 @@
       <details class="secondary-operation recipes-panel" id="recipes-panel">
         <summary>Что приготовить из того, что есть дома?</summary>
         <p>Рецепты опираются на последние записанные остатки. Если продукт давно не проверяли, уточните количество перед готовкой.</p>
+        <form id="recipe-recommend-form" class="recipe-recommend-form">
+          <label for="recipe-recommend-category">Какие блюда хочется?</label>
+          <select id="recipe-recommend-category"><option value="all">Все категории</option></select>
+          <label for="recipe-recommend-budget">Бюджет на недостающие продукты (сом)</label>
+          <input id="recipe-recommend-budget" type="text" inputmode="decimal" value="1000" required>
+          <button class="secondary-button" type="submit" id="recipe-recommend-submit">Подобрать блюда под бюджет</button>
+        </form>
+        <p id="recipe-recommend-status" aria-live="polite"></p>
+        <div id="recipe-recommend-results" class="recipe-recommend-results"></div>
+        <p class="human-note">Подбираем до шести блюд за запрос, чтобы не опрашивать магазин без ограничений. Ориентировочная стоимость относится к целым упаковкам; неизвестный остаток не считаем нулём. Список покупок сохраняется только после отдельной проверки выбранного рецепта.</p>
         <button class="secondary-button" type="button" id="refresh-recipes">Обновить по остаткам</button>
         <p id="recipes-status" aria-live="polite"></p>
         <div id="recipes-list" class="recipes-list"></div>
@@ -421,6 +431,7 @@
   <script src="/assets/app.js" defer></script>
   <script src="/assets/mixed_receipt_review.js" defer></script>
   <script src="/assets/mixed_shopping_workflow.js" defer></script>
+  <script src="/assets/recipe_recommendations.js" defer></script>
   <script src="/assets/reset.js" defer></script>
 </body>
 </html>
